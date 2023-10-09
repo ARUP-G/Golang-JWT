@@ -29,4 +29,6 @@ func main() {
 	router.GET("/spi-2", func(c *gin.Context) {
 		c.JSON(200, gin.H{"success": "Access granted for api-2"})
 	})
+
+	router.Run(":" + port)
 }

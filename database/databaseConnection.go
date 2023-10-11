@@ -34,3 +34,5 @@ func DBinstance() *mongo.Client {
 	return client
 
 }
+
+var client *mongo.Client = DBinstance()

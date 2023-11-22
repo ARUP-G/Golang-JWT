@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/ARUP-G/Golang-JWT/database"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/mongo"
 )

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -67,6 +69,27 @@ func Singup() gin.HandlerFunc {
 		if count > 0 {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": " Email or Contact no already exists"})
 		}
+
+		user.Created_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+
+		user.Updated_at, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		user.ID = primitive.NewObjectID()
+
+		user.UserID = user.ID.Hex()
+
+		token, refreshToken, _ := helpers.GenerateAllTokens(*user.Email, *user.FirstName, *user.LastName, *user.UserType, *&user.UserID)
+
+		user.Token = &token
+		user.RefreshToken = &refreshToken
+
+		resultInsertionNumber, insertErr := userCollection.InsertOne(c, user)
+		if insertErr != nil {
+			msg := fmt.Sprintf("user was not created")
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+			return
+		}
+		defer cancle()
+		ctx.JSON(http.StatusOK, resultInsertionNumber)
 	}
 }
 

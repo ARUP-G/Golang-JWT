@@ -15,6 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var userCollection *mongo.Collection = database.OpenCollection(database.Client, "user")
@@ -25,8 +26,16 @@ func HashPassword() {
 
 }
 
-func VarifyPassworf() {
+func VerifyPassword(userPassword string, providedPassword string) (bool, string) {
+	err := bcrypt.CompareHashAndPassword([]byte(providedPassword), []byte(userPassword))
+	check := true
+	msg := ""
 
+	if err != nil {
+		msg = fmt.Sprintf("email or password is incorrect")
+		check = false
+	}
+	return check, msg
 }
 
 func Singup() gin.HandlerFunc {
@@ -93,7 +102,29 @@ func Singup() gin.HandlerFunc {
 	}
 }
 
-func Login() {
+func Login() gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+		var c, cancle = context.WithTimeout(context.Background(), 100*time.Second)
+		var user models.User
+		var foundUser models.User // for the user of given Email
+
+		if err := ctx.BindJSON(&user); err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		// Find the given Email from the collection
+		err := userCollection.FindOne(c, bson.M{"email": user.Email}).Decode(&foundUser)
+		defer cancle()
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "email or password is incorrect"})
+			return
+		}
+
+		// Password varification
+		passwordIsValid, msg := VerifyPassword(*user.Password, *foundUser.Password)
+		defer cancle()
+	}
 
 }
 func GetUser() gin.HandlerFunc {
